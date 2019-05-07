@@ -37,21 +37,22 @@ func handler() error {
 		case "stopped":
 			state = "stopped"
 		}
-
-		if state == "running" {
-			err = e.stopInstances(instances)
-			if err != nil {
-				return errors.Wrapf(err, "unable to stop instances: %v\n", instances)
-			}
-			log.Printf("successfully stopped instances: %v\n", instance.Name)
-		} else if state == "stopped" {
-			err = e.startInstances(instances)
-			if err != nil {
-				return errors.Wrapf(err, "unable to start instances: %v\n", instances)
-			}
-			log.Printf("successfully started instances: %v\n", instance.Name)
-		}
 	}
+
+	if state == "running" {
+		err = e.stopInstances(instances)
+		if err != nil {
+			return errors.Wrapf(err, "unable to stop instances: %v\n", instances)
+		}
+		log.Printf("successfully stopped instances: %v\n", instances)
+	} else if state == "stopped" {
+		err = e.startInstances(instances)
+		if err != nil {
+			return errors.Wrapf(err, "unable to start instances: %v\n", instances)
+		}
+		log.Printf("successfully started instances: %v\n", instances)
+	}
+
 	return nil
 }
 
