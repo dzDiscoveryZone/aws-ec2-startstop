@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 	"github.com/pkg/errors"
 	"log"
+	"os"
 )
 
 func handler() error {
@@ -21,32 +22,40 @@ func handler() error {
 
 	e := Ec2Client{Client: ec2.New(cfg)}
 
-	instances, err := e.getInstanceIds("tag:auto-shutdown", []string{"true"})
+	tagKey := fmt.Sprintf("tag:%s", os.Getenv("START_STOP_KEY"))
+	instances, err := e.getInstanceIds(tagKey, []string{os.Getenv("START_STOP_VALUE")})
 	if err != nil {
-		return errors.Wrapf(err,"error loading Instance ID's, err: %v", instances)
+		return errors.Wrapf(err, "error loading Instance ID's, err: %v", instances)
 	}
 
+	var state string
 	for _, instance := range instances {
 		fmt.Printf("Name: %s, ID: %s, Status Value: %s\n", instance.Name, instance.ID, instance.StateName)
 		switch instance.StateName {
 		case "running":
+			state = "running"
+		case "stopped":
+			state = "stopped"
+		}
+
+		if state == "running" {
 			err = e.stopInstances(instances)
 			if err != nil {
-				return errors.Wrapf(err,"unable to stop instances: %v\n", instances)
+				return errors.Wrapf(err, "unable to stop instances: %v\n", instances)
 			}
-			log.Printf("Successfully stopped instances: %v\n", instance.Name)
-		case "stopped":
+			log.Printf("successfully stopped instances: %v\n", instance.Name)
+		} else if state == "stopped" {
 			err = e.startInstances(instances)
 			if err != nil {
-				return errors.Wrapf(err,"unable to start instances: %v\n", instances)
+				return errors.Wrapf(err, "unable to start instances: %v\n", instances)
 			}
-			log.Printf("Successfully started instances: %v\n", instance.Name)
+			log.Printf("successfully started instances: %v\n", instance.Name)
 		}
 	}
 	return nil
 }
 
-func main()  {
+func main() {
 	lambda.Start(handler)
 }
 
@@ -57,8 +66,8 @@ type Ec2Client struct {
 
 // Instance is a struct for storing the ID and Names of EC2 instances filtered out by tag
 type Instance struct {
-	ID   string
-	Name string
+	ID        string
+	Name      string
 	StateName string
 }
 
@@ -83,8 +92,8 @@ func (e *Ec2Client) getInstanceIds(tagValue string, tags []string) ([]Instance, 
 			for _, tag := range instance.Tags {
 				if *tag.Key == "Name" {
 					instances = append(instances, Instance{
-						ID:   *instance.InstanceId,
-						Name: *tag.Value,
+						ID:        *instance.InstanceId,
+						Name:      *tag.Value,
 						StateName: string(instance.State.Name),
 					})
 				}

@@ -18,4 +18,3 @@ func (m *mockedEc2Client) DescribeInstancesRequest(in *ec2.DescribeInstancesInpu
 		},
 	}
 }
-
