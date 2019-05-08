@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/endpoints"
@@ -9,8 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 	"github.com/pkg/errors"
-	"log"
-	"os"
 )
 
 func handler() error {
@@ -33,11 +34,14 @@ func handler() error {
 		fmt.Printf("Name: %s, ID: %s, Status Value: %s\n", instance.Name, instance.ID, instance.StateName)
 		switch instance.StateName {
 		case "running":
+			log.Printf("instance %s is in state == %s", instance.Name, instance.ID)
 			state = "running"
 		case "stopped":
+			log.Printf("instance %s is in state == %s", instance.Name, instance.ID)
 			state = "stopped"
 		}
 	}
+	log.Printf("state == %s", state)
 
 	if state == "running" {
 		err = e.stopInstances(instances)
